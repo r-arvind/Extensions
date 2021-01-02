@@ -1,0 +1,39 @@
+{
+  "name": "MMD-Loader",
+  "version": "0.0.1",
+  "description": "BabylonJS MMD Loader.",
+  "keywords": [
+    "webgl",
+    "webgl2",
+    "MMD",
+    "babylonjs",
+    "loader"
+  ],
+  "readme": "README.md",
+  "main": "dist/mmdloader.js",
+  "files": [
+    "dist/mmdloader.js",
+    "README.md"
+  ],
+  "author": "r-arvind",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/r-arvind/Extensions.git"
+  },
+  "scripts": {
+    "prod": "webpack -p --env=prod",
+    "dev": "webpack -d --env=dev",
+    "start": "webpack-dev-server -d --open"
+  },
+  "devDependencies": {
+    "@babylonjs/core": "^4.1.0-alpha.27",
+    "css-loader": "^2.1.0",
+    "http-server": "^0.10.0",
+    "style-loader": "^0.23.1",
+    "ts-loader": "^5.3.3",
+    "typescript": "^3.2.2",
+    "webpack": "^4.28.4",
+    "webpack-cli": "^3.2.1",
+    "webpack-dev-server": "^3.1.14"
+  }
+}
