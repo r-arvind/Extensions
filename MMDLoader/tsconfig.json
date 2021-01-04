@@ -1,7 +1,13 @@
 {
+  "include": [
+      "src/*"
+  ],
   "compilerOptions": {
-      "module": "esNext",
+      "module": "commonjs",
       "target": "es5",
       "moduleResolution": "node",
+      "declaration": true,
+      "declarationDir": "dist/",
+      "baseUrl": ".",
   }
 }

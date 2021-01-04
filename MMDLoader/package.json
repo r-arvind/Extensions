@@ -1,5 +1,5 @@
 {
-  "name": "MMD-Loader",
+  "name": "mmdloader",
   "version": "0.0.1",
   "description": "BabylonJS MMD Loader.",
   "keywords": [
@@ -21,9 +21,9 @@
     "url": "https://github.com/r-arvind/Extensions.git"
   },
   "scripts": {
-    "prod": "webpack -p --env=prod",
-    "dev": "webpack -d --env=dev",
-    "start": "webpack-dev-server -d --open"
+    "start": "webpack-dev-server --config webpack.config.js",
+    "build": "webpack --config webpack.config.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
     "@babylonjs/core": "^4.1.0-alpha.27",
@@ -35,5 +35,8 @@
     "webpack": "^4.28.4",
     "webpack-cli": "^3.2.1",
     "webpack-dev-server": "^3.1.14"
+  },
+  "dependencies": {
+    "mmd-parser": "^1.0.3"
   }
 }

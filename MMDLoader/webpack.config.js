@@ -1,35 +1,39 @@
-const path = require("path");
+const path = require('path');
 
-var APP_DIR = path.resolve(__dirname, "./src");
-var BUILD_DIR = path.resolve(__dirname, "./dist");
-var DEV_DIR = path.resolve(__dirname, "./temp");
 
- var buildConfig = function(env) {
-    var isProd = env === "prod";
-    return {
-        context: __dirname,
-        entry: APP_DIR + "/mmd-loader.ts",
-        output: {
-            path: isProd ? BUILD_DIR : DEV_DIR,
-            publicPath: "/",
-            filename: "mmd-loader.js"
-        },
-        devtool: isProd ? "none" : "source-map",
-        resolve: {
-            extensions: [".ts", ".js"]
-        },
-        module: {
-            rules: [{
-                test: /\.tsx?$/,
-                loader: "ts-loader"
-            },
-            {
-                test: /\.css$/,
-                use: ["style-loader", "css-loader"],
-            }]
-        },
-        mode: isProd ? "production" : "development"
-    };
- }
+module.exports = {
 
-module.exports = buildConfig;
+    entry: './src/mmd-loader.ts',
+    output: {
+      path: path.resolve(__dirname , 'dist/'),
+    //   publicPath: '/public',
+      filename: 'mmdloader.js',
+      library: 'MMDLoader',
+      libraryTarget: 'umd',
+      libraryExport: "default",
+      umdNamedDefine: true,
+    },
+    devServer: {
+      contentBase: './dist'
+    },
+    module: {
+        rules: [
+        {
+            test: /\.tsx?$/,
+            use: 'ts-loader',
+            exclude: /node_modules/,
+        },
+                {
+            test: /\.css$/,
+            use: [
+                { loader: 'style-loader', options: { injectType: 'singletonStyleTag' } },
+                                { loader: 'css-loader' },
+            ]
+        }
+      ]
+        },
+    resolve: {
+      extensions: ['.ts', '.js', '.pcss']
+    },
+     
+  };
