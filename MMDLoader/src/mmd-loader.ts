@@ -1,5 +1,5 @@
 import { Tools } from "@babylonjs/core/Misc/tools";
-import { SceneLoader, ISceneLoaderPluginAsync, ISceneLoaderPluginExtensions, ISceneLoaderProgressEvent, ISceneLoaderPluginFactory, ISceneLoaderPlugin, ISceneLoaderAsyncResult  } from "@babylonjs/core/Loading/sceneLoader";
+import {ISceneLoaderProgressEvent, ISceneLoaderAsyncResult  } from "@babylonjs/core/Loading/sceneLoader";
 import { Nullable } from "@babylonjs/core/types";
 import { Scene } from "@babylonjs/core/scene";
 import {AbstractMesh} from "@babylonjs/core/Meshes/abstractMesh"
@@ -24,7 +24,7 @@ export default class MMDLoader {
 
 	private _forAssetContainer = false;
 
-    public extensions: ISceneLoaderPluginExtensions = {
+    public extensions = {
         ".pmd": { isBinary: true },
         ".pmx": { isBinary: true }
     };
@@ -32,8 +32,18 @@ export default class MMDLoader {
     public importMeshAsync(meshesNames: any, scene: Scene, data: any, rootUrl: string, onProgress?: (event: ISceneLoaderProgressEvent) => void, fileName?: string): Promise<ISceneLoaderAsyncResult> {
 
 		var parser = this._getParser();
+		var frmat = fileName.split(".").pop();
 
-		console.log(rootUrl);
+		var meshInfo;
+
+		if(frmat == "pmx"){
+			meshInfo = parser.parsePmx(data);
+		} else if (frmat == "pmd"){
+			meshInfo = parser.parsePmd(data);
+		}
+
+		console.log(meshInfo);
+
 		return new Promise((resolve) => {
 			return {
 					meshes: [],
