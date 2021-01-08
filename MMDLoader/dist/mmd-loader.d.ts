@@ -1,4 +1,4 @@
-import { ISceneLoaderProgressEvent, ISceneLoaderAsyncResult } from "@babylonjs/core/Loading/sceneLoader";
+import { ISceneLoaderProgressEvent } from "@babylonjs/core/Loading/sceneLoader";
 import { Scene } from "@babylonjs/core/scene";
 import { AssetContainer } from "@babylonjs/core/assetContainer";
 export default class MMDLoader {
@@ -14,8 +14,10 @@ export default class MMDLoader {
             isBinary: boolean;
         };
     };
-    importMeshAsync(meshesNames: any, scene: Scene, data: any, rootUrl: string, onProgress?: (event: ISceneLoaderProgressEvent) => void, fileName?: string): Promise<ISceneLoaderAsyncResult>;
+    importMeshAsync(meshesNames: any, scene: Scene, data: any, rootUrl: string, onProgress?: (event: ISceneLoaderProgressEvent) => void, fileName?: string): Promise<any>;
     loadAsync(scene: Scene, data: string, rootUrl: string, onProgress?: (event: ISceneLoaderProgressEvent) => void, fileName?: string): Promise<void>;
     loadAssetContainerAsync(scene: Scene, data: string, rootUrl: string, onProgress?: (event: ISceneLoaderProgressEvent) => void, fileName?: string): Promise<AssetContainer>;
     private _getParser;
+    private _parseMesh;
+    private _buildGeometry;
 }

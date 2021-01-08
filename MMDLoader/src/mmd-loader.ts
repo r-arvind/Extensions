@@ -3,7 +3,7 @@ import {ISceneLoaderProgressEvent, ISceneLoaderAsyncResult  } from "@babylonjs/c
 import { FloatArray, IndicesArray } from "@babylonjs/core/types";
 import { Scene } from "@babylonjs/core/scene";
 import {Mesh} from "@babylonjs/core/Meshes/mesh"
-import {Skeleton} from "@babylonjs/core/Bones/skeleton"
+// import {Skeleton} from "@babylonjs/core/Bones/skeleton"
 import * as MMDParser from 'mmd-parser';
 // import {IParticleSystem} from "@babylonjs/core/Particles/IParticleSystem"
 import {Vector2,Vector3} from "@babylonjs/core/Maths/math.vector"
