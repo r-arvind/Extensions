@@ -1,16 +1,17 @@
 import { Tools } from "@babylonjs/core/Misc/tools";
 import {ISceneLoaderProgressEvent, ISceneLoaderAsyncResult  } from "@babylonjs/core/Loading/sceneLoader";
-import { Nullable } from "@babylonjs/core/types";
+import { FloatArray, IndicesArray } from "@babylonjs/core/types";
 import { Scene } from "@babylonjs/core/scene";
-import {AbstractMesh} from "@babylonjs/core/Meshes/abstractMesh"
+import {Mesh} from "@babylonjs/core/Meshes/mesh"
 import {Skeleton} from "@babylonjs/core/Bones/skeleton"
 import * as MMDParser from 'mmd-parser';
-import {IParticleSystem} from "@babylonjs/core/Particles/IParticleSystem"
+// import {IParticleSystem} from "@babylonjs/core/Particles/IParticleSystem"
 import {Vector2,Vector3} from "@babylonjs/core/Maths/math.vector"
-import {Geometry} from "@babylonjs/core/Meshes/geometry"
+import {Color4} from "@babylonjs/core/Maths/math.color"
+// import {Geometry} from "@babylonjs/core/Meshes/geometry"
 import {VertexData} from "@babylonjs/core/Meshes/mesh.vertexData"
-import {VertexBuffer} from "@babylonjs/core/Meshes/buffer"
-import { WebRequest } from '@babylonjs/core/Misc/webRequest';
+// import {VertexBuffer} from "@babylonjs/core/Meshes/buffer"
+// import { WebRequest } from '@babylonjs/core/Misc/webRequest';
 import {AssetContainer} from "@babylonjs/core/assetContainer"
 
 export default class MMDLoader {
@@ -29,33 +30,34 @@ export default class MMDLoader {
         ".pmx": { isBinary: true }
     };
 
-    public importMeshAsync(meshesNames: any, scene: Scene, data: any, rootUrl: string, onProgress?: (event: ISceneLoaderProgressEvent) => void, fileName?: string): Promise<ISceneLoaderAsyncResult> {
+    public importMeshAsync(meshesNames: any, scene: Scene, data: any, rootUrl: string, onProgress?: (event: ISceneLoaderProgressEvent) => void, fileName?: string): Promise<any> {
 
 		var parser = this._getParser();
 		var frmat = fileName.split(".").pop();
+		var meshname = fileName.split(".")[0];
 
-		var meshInfo;
+		var meshData;
 
 		if(frmat == "pmx"){
-			meshInfo = parser.parsePmx(data);
+			meshData = parser.parsePmx(data);
 		} else if (frmat == "pmd"){
-			meshInfo = parser.parsePmd(data);
+			meshData = parser.parsePmd(data);
 		}
 
-		console.log(meshInfo);
+		console.log(meshData);
 
-		return new Promise((resolve) => {
+		return this._parseMesh(meshname, meshData, scene, rootUrl).then((mesh) => {
 			return {
-					meshes: [],
-					particleSystems: [],
-					skeletons: [],
-					animationGroups: [],
-					transformNodes: [],
-					geometries: [],
-					lights: []
-				};
-			});
-    }
+				meshes: mesh,
+				particleSystems: [],
+				skeletons: [],
+				animationGroups: [],
+				transformNodes: [],
+				geometries: [],
+				lights: []
+			};
+		});
+	}
 
     public loadAsync(scene: Scene, data: string, rootUrl: string, onProgress?: (event: ISceneLoaderProgressEvent) => void, fileName?: string): Promise<void> {
         //Get the 3D model
@@ -86,386 +88,413 @@ export default class MMDLoader {
         return this.parser;
     }
 
+	private _parseMesh(meshname, data, scene, rootUrl){
+		let mmdPromises: Array<Promise<void>> = [];
+		var mmdMesh;
 
-	// private _buildGeometry(data) {
+		mmdPromises.push(new Promise((resolve, reject) => {
+			try{
+				mmdMesh = this._buildGeometry(meshname,data,scene,rootUrl);
+				resolve();
+			} catch(e){
+				reject(e);
+			}
+		}));
 
-	// 		// for geometry
-	// 		var positions = [];
-	// 		var uvs = [];
-	// 		var normals = [];
+		return Promise.all(mmdPromises).then(() => {
+			return mmdMesh;
+		})
+	}
 
-	// 		var indices = [];
+	private _buildGeometry(meshname, data, scene, rootUrl) {
 
-	// 		var groups = [];
+			// for geometry
+			var positions = [];
+			var uvs = [];
+			var normals = [];
 
-	// 		var bones = [];
-	// 		var skinIndices = [];
-	// 		var skinWeights = [];
+			var indices = [];
 
-	// 		var morphTargets = [];
-	// 		var morphPositions = [];
+			var groups = [];
 
-	// 		var iks = [];
-	// 		var grants = [];
+			var bones = [];
+			var skinIndices = [];
+			var skinWeights = [];
 
-	// 		var rigidBodies = [];
-	// 		var constraints = [];
+			var morphTargets = [];
+			var morphPositions = [];
 
-	// 		// for work
-	// 		var offset = 0;
-	// 		var boneTypeTable = {};
+			var iks = [];
+			var grants = [];
+
+			var rigidBodies = [];
+			var constraints = [];
+
+			// for work
+			var offset = 0;
+			var boneTypeTable = {};
 
 			
-	// 		// positions, normals, uvs, skinIndices, skinWeights
-	// 		for ( var i = 0; i < data.metadata.vertexCount; i ++ ) {
-	// 			var v = data.vertices[ i ];
-	// 			for ( var j = 0, jl = v.position.length; j < jl; j ++ ) {
-	// 				positions.push( v.position[ j ] );
-	// 			}
-	// 			for ( var j = 0, jl = v.normal.length; j < jl; j ++ ) {
-	// 				normals.push( v.normal[ j ] );
-	// 			}
-	// 			for ( var j = 0, jl = v.uv.length; j < jl; j ++ ) {
-	// 				uvs.push( v.uv[ j ] );
-	// 			}
-	// 			for ( var j = 0; j < 4; j ++ ) {
-	// 				skinIndices.push( v.skinIndices.length - 1 >= j ? v.skinIndices[ j ] : 0.0 );
-	// 			}
-	// 			for ( var j = 0; j < 4; j ++ ) {
-	// 				skinWeights.push( v.skinWeights.length - 1 >= j ? v.skinWeights[ j ] : 0.0 );
-	// 			}
-	// 		}
-
-	// 		// indices
-	// 		for ( var i = 0; i < data.metadata.faceCount; i ++ ) {
-	// 			var face = data.faces[ i ];
-	// 			for ( var j = 0, jl = face.indices.length; j < jl; j ++ ) {
-	// 				indices.push( face.indices[ j ] );
-	// 			}
-	// 		}
-
-	// 		// groups
-	// 		for ( var i = 0; i < data.metadata.materialCount; i ++ ) {
-	// 			var material = data.materials[ i ];
-	// 			groups.push( {
-	// 				offset: offset * 3,
-	// 				count: material.faceCount * 3
-	// 			} );
-	// 			offset += material.faceCount;
-	// 		}
-
-	// 		// bones
-	// 		for ( var i = 0; i < data.metadata.rigidBodyCount; i ++ ) {
-	// 			var body = data.rigidBodies[ i ];
-	// 			var value = boneTypeTable[ body.boneIndex ];
-	// 			// keeps greater number if already value is set without any special reasons
-	// 			value = value === undefined ? body.type : Math.max( body.type, value );
-	// 			boneTypeTable[ body.boneIndex ] = value;
-	// 		}
-
-	// 		for ( var i = 0; i < data.metadata.boneCount; i ++ ) {
-	// 			var boneData = data.bones[ i ];
-	// 			var bone = {
-	// 				parent: boneData.parentIndex,
-	// 				name: boneData.name,
-	// 				pos: boneData.position.slice( 0, 3 ),
-	// 				rotq: [ 0, 0, 0, 1 ],
-	// 				scl: [ 1, 1, 1 ],
-	// 				rigidBodyType: boneTypeTable[ i ] !== undefined ? boneTypeTable[ i ] : - 1
-	// 			};
-	// 			if ( bone.parent !== - 1 ) {
-	// 				bone.pos[ 0 ] -= data.bones[ bone.parent ].position[ 0 ];
-	// 				bone.pos[ 1 ] -= data.bones[ bone.parent ].position[ 1 ];
-	// 				bone.pos[ 2 ] -= data.bones[ bone.parent ].position[ 2 ];
-	// 			}
-	// 			bones.push( bone );
-	// 		}
-
-	// 		// iks
-
-	// 		// TODO: remove duplicated codes between PMD and PMX
-	// 		if ( data.metadata.format === 'pmd' ) {
-	// 			for ( var i = 0; i < data.metadata.ikCount; i ++ ) {
-	// 				var ik = data.iks[ i ];
-	// 				var param = {
-	// 					target: ik.target,
-	// 					effector: ik.effector,
-	// 					iteration: ik.iteration,
-	// 					maxAngle: ik.maxAngle * 4,
-	// 					links: []
-	// 				};
-	// 				for ( var j = 0, jl = ik.links.length; j < jl; j ++ ) {
-	// 					var link:any = {};
-	// 					link.index = ik.links[ j ].index;
-	// 					link.enabled = true;
-	// 					if ( data.bones[ link.index ].name.indexOf( 'ひざ' ) >= 0 ) {
-	// 						link.limitation = new Vector3( 1.0, 0.0, 0.0 );
-	// 					}
-	// 					param.links.push( link );
-	// 				}
-	// 				iks.push( param );
-	// 			}
-
-	// 		} else {
-	// 			for ( var i = 0; i < data.metadata.boneCount; i ++ ) {
-	// 				var ik = data.bones[ i ].ik;
-	// 				if ( ik === undefined ) continue;
-	// 				let param = {
-	// 					target: i,
-	// 					effector: ik.effector,
-	// 					iteration: ik.iteration,
-	// 					maxAngle: ik.maxAngle,
-	// 					links: []
-	// 				};
-	// 				for ( var j = 0, jl = ik.links.length; j < jl; j ++ ) {
-	// 					let link:any = {};
-	// 					link.index = ik.links[ j ].index;
-	// 					link.enabled = true;
-	// 					if ( ik.links[ j ].angleLimitation === 1 ) {
-	// 						// Revert if rotationMin/Max doesn't work well
-	// 						// link.limitation = new Vector3( 1.0, 0.0, 0.0 );
-	// 						var rotationMin = ik.links[ j ].lowerLimitationAngle;
-	// 						var rotationMax = ik.links[ j ].upperLimitationAngle;
-	// 						// Convert Left to Right coordinate by myself because
-	// 						// MMDParser doesn't convert. It's a MMDParser's bug
-	// 						var tmp1 = - rotationMax[ 0 ];
-	// 						var tmp2 = - rotationMax[ 1 ];
-	// 						rotationMax[ 0 ] = - rotationMin[ 0 ];
-	// 						rotationMax[ 1 ] = - rotationMin[ 1 ];
-	// 						rotationMin[ 0 ] = tmp1;
-	// 						rotationMin[ 1 ] = tmp2;
-	// 						link.rotationMin = new Vector3().fromArray( rotationMin );
-	// 						link.rotationMax = new Vector3().fromArray( rotationMax );
-	// 					}
-	// 					param.links.push( link );
-	// 				}
-	// 				iks.push( param );
-	// 			}
-	// 		}
-
-	// 		// grants
-	// 		if ( data.metadata.format === 'pmx' ) {
-	// 			for ( var i = 0; i < data.metadata.boneCount; i ++ ) {
-	// 				var boneData = data.bones[ i ];
-	// 				var grant = boneData.grant;
-	// 				if ( grant === undefined ) continue;
-	// 				let param = {
-	// 					index: i,
-	// 					parentIndex: grant.parentIndex,
-	// 					ratio: grant.ratio,
-	// 					isLocal: grant.isLocal,
-	// 					affectRotation: grant.affectRotation,
-	// 					affectPosition: grant.affectPosition,
-	// 					transformationClass: boneData.transformationClass
-	// 				};
-	// 				grants.push( param );
-	// 			}
-	// 			grants.sort( function ( a, b ) {
-	// 				return a.transformationClass - b.transformationClass;
-	// 			} );
-	// 		}
+			// positions, normals, uvs, skinIndices, skinWeights
+			for ( var i = 0; i < data.metadata.vertexCount; i ++ ) {
+				var v = data.vertices[ i ];
+				for ( var j = 0, jl = v.position.length; j < jl; j ++ ) {
+					positions.push( v.position[ j ] );
+				}
+				for ( var j = 0, jl = v.normal.length; j < jl; j ++ ) {
+					normals.push( v.normal[ j ] );
+				}
+				for ( var j = 0, jl = v.uv.length; j < jl; j ++ ) {
+					uvs.push( v.uv[ j ] );
+				}
+				for ( var j = 0; j < 4; j ++ ) {
+					skinIndices.push( v.skinIndices.length - 1 >= j ? v.skinIndices[ j ] : 0.0 );
+				}
+				for ( var j = 0; j < 4; j ++ ) {
+					skinWeights.push( v.skinWeights.length - 1 >= j ? v.skinWeights[ j ] : 0.0 );
+				}
+			}
+
+			// indices
+			for ( var i = 0; i < data.metadata.faceCount; i ++ ) {
+				var face = data.faces[ i ];
+				for ( var j = 0, jl = face.indices.length; j < jl; j ++ ) {
+					indices.push( face.indices[ j ] );
+				}
+			}
+
+			// groups
+			for ( var i = 0; i < data.metadata.materialCount; i ++ ) {
+				var material = data.materials[ i ];
+				groups.push( {
+					offset: offset * 3,
+					count: material.faceCount * 3
+				} );
+				offset += material.faceCount;
+			}
+
+			// bones
+			for ( var i = 0; i < data.metadata.rigidBodyCount; i ++ ) {
+				var body = data.rigidBodies[ i ];
+				var value = boneTypeTable[ body.boneIndex ];
+				// keeps greater number if already value is set without any special reasons
+				value = value === undefined ? body.type : Math.max( body.type, value );
+				boneTypeTable[ body.boneIndex ] = value;
+			}
+
+			for ( var i = 0; i < data.metadata.boneCount; i ++ ) {
+				var boneData = data.bones[ i ];
+				var bone = {
+					parent: boneData.parentIndex,
+					name: boneData.name,
+					pos: boneData.position.slice( 0, 3 ),
+					rotq: [ 0, 0, 0, 1 ],
+					scl: [ 1, 1, 1 ],
+					rigidBodyType: boneTypeTable[ i ] !== undefined ? boneTypeTable[ i ] : - 1
+				};
+				if ( bone.parent !== - 1 ) {
+					bone.pos[ 0 ] -= data.bones[ bone.parent ].position[ 0 ];
+					bone.pos[ 1 ] -= data.bones[ bone.parent ].position[ 1 ];
+					bone.pos[ 2 ] -= data.bones[ bone.parent ].position[ 2 ];
+				}
+				bones.push( bone );
+			}
+
+			// iks
+
+			// TODO: remove duplicated codes between PMD and PMX
+			if ( data.metadata.format === 'pmd' ) {
+				for ( var i = 0; i < data.metadata.ikCount; i ++ ) {
+					var ik = data.iks[ i ];
+					var param = {
+						target: ik.target,
+						effector: ik.effector,
+						iteration: ik.iteration,
+						maxAngle: ik.maxAngle * 4,
+						links: []
+					};
+					for ( var j = 0, jl = ik.links.length; j < jl; j ++ ) {
+						var link:any = {};
+						link.index = ik.links[ j ].index;
+						link.enabled = true;
+						if ( data.bones[ link.index ].name.indexOf( 'ひざ' ) >= 0 ) {
+							link.limitation = new Vector3( 1.0, 0.0, 0.0 );
+						}
+						param.links.push( link );
+					}
+					iks.push( param );
+				}
+
+			} else {
+				for ( var i = 0; i < data.metadata.boneCount; i ++ ) {
+					var ik = data.bones[ i ].ik;
+					if ( ik === undefined ) continue;
+					let param = {
+						target: i,
+						effector: ik.effector,
+						iteration: ik.iteration,
+						maxAngle: ik.maxAngle,
+						links: []
+					};
+					for ( var j = 0, jl = ik.links.length; j < jl; j ++ ) {
+						let link:any = {};
+						link.index = ik.links[ j ].index;
+						link.enabled = true;
+						if ( ik.links[ j ].angleLimitation === 1 ) {
+							// Revert if rotationMin/Max doesn't work well
+							// link.limitation = new Vector3( 1.0, 0.0, 0.0 );
+							var rotationMin = ik.links[ j ].lowerLimitationAngle;
+							var rotationMax = ik.links[ j ].upperLimitationAngle;
+							// Convert Left to Right coordinate by myself because
+							// MMDParser doesn't convert. It's a MMDParser's bug
+							var tmp1 = - rotationMax[ 0 ];
+							var tmp2 = - rotationMax[ 1 ];
+							rotationMax[ 0 ] = - rotationMin[ 0 ];
+							rotationMax[ 1 ] = - rotationMin[ 1 ];
+							rotationMin[ 0 ] = tmp1;
+							rotationMin[ 1 ] = tmp2;
+							link.rotationMin = new Vector3().fromArray( rotationMin );
+							link.rotationMax = new Vector3().fromArray( rotationMax );
+						}
+						param.links.push( link );
+					}
+					iks.push( param );
+				}
+			}
+
+			// grants
+			if ( data.metadata.format === 'pmx' ) {
+				for ( var i = 0; i < data.metadata.boneCount; i ++ ) {
+					var boneData = data.bones[ i ];
+					var grant = boneData.grant;
+					if ( grant === undefined ) continue;
+					let param = {
+						index: i,
+						parentIndex: grant.parentIndex,
+						ratio: grant.ratio,
+						isLocal: grant.isLocal,
+						affectRotation: grant.affectRotation,
+						affectPosition: grant.affectPosition,
+						transformationClass: boneData.transformationClass
+					};
+					grants.push( param );
+				}
+				grants.sort( function ( a, b ) {
+					return a.transformationClass - b.transformationClass;
+				} );
+			}
 
-	// 		// morph
-	// 		function updateAttributes( attribute, morph, ratio ) {
-	// 			for ( var i = 0; i < morph.elementCount; i ++ ) {
-	// 				var element = morph.elements[ i ];
-	// 				var index;
-	// 				if ( data.metadata.format === 'pmd' ) {
-	// 					index = data.morphs[ 0 ].elements[ element.index ].index;
-	// 				} else {
-	// 					index = element.index;
-	// 				}
-	// 				attribute.array[ index * 3 + 0 ] += element.position[ 0 ] * ratio;
-	// 				attribute.array[ index * 3 + 1 ] += element.position[ 1 ] * ratio;
-	// 				attribute.array[ index * 3 + 2 ] += element.position[ 2 ] * ratio;
-	// 			}
-	// 		}
-	// 		for ( var i = 0; i < data.metadata.morphCount; i ++ ) {
-	// 			var morph = data.morphs[ i ];
-	// 			var params = { name: morph.name };
+			var vertexData: VertexData = new VertexData();
+			vertexData.uvs = uvs as FloatArray;
+			vertexData.indices = indices as IndicesArray;
+			vertexData.positions = positions as FloatArray;
+			vertexData.normals = normals as FloatArray;
 
-	// 			var attribute = new Float32BufferAttribute( data.metadata.vertexCount * 3, 3 );
-	// 			attribute.name = morph.name;
+			var babylonMesh = new Mesh(meshname, scene);
+			vertexData.applyToMesh(babylonMesh);
 
-	// 			for ( var j = 0; j < data.metadata.vertexCount * 3; j ++ ) {
+			return babylonMesh;
 
-	// 				attribute.array[ j ] = positions[ j ];
+			}
+			// morph
+			// function updateAttributes( attribute, morph, ratio ) {
+			// 	for ( var i = 0; i < morph.elementCount; i ++ ) {
+			// 		var element = morph.elements[ i ];
+			// 		var index;
+			// 		if ( data.metadata.format === 'pmd' ) {
+			// 			index = data.morphs[ 0 ].elements[ element.index ].index;
+			// 		} else {
+			// 			index = element.index;
+			// 		}
+			// 		attribute.array[ index * 3 + 0 ] += element.position[ 0 ] * ratio;
+			// 		attribute.array[ index * 3 + 1 ] += element.position[ 1 ] * ratio;
+			// 		attribute.array[ index * 3 + 2 ] += element.position[ 2 ] * ratio;
+			// 	}
+			// }
+			// for ( var i = 0; i < data.metadata.morphCount; i ++ ) {
+			// 	var morph = data.morphs[ i ];
+			// 	var params = { name: morph.name };
 
-	// 			}
+			// 	var attribute = new Float32BufferAttribute( data.metadata.vertexCount * 3, 3 );
+			// 	attribute.name = morph.name;
 
-	// 			if ( data.metadata.format === 'pmd' ) {
+			// 	for ( var j = 0; j < data.metadata.vertexCount * 3; j ++ ) {
 
-	// 				if ( i !== 0 ) {
+			// 		attribute.array[ j ] = positions[ j ];
 
-	// 					updateAttributes( attribute, morph, 1.0 );
+			// 	}
 
-	// 				}
+			// 	if ( data.metadata.format === 'pmd' ) {
 
-	// 			} else {
+			// 		if ( i !== 0 ) {
 
-	// 				if ( morph.type === 0 ) { // group
+			// 			updateAttributes( attribute, morph, 1.0 );
 
-	// 					for ( var j = 0; j < morph.elementCount; j ++ ) {
+			// 		}
 
-	// 						var morph2 = data.morphs[ morph.elements[ j ].index ];
-	// 						var ratio = morph.elements[ j ].ratio;
+			// 	} else {
 
-	// 						if ( morph2.type === 1 ) {
+			// 		if ( morph.type === 0 ) { // group
 
-	// 							updateAttributes( attribute, morph2, ratio );
+			// 			for ( var j = 0; j < morph.elementCount; j ++ ) {
 
-	// 						} else {
+			// 				var morph2 = data.morphs[ morph.elements[ j ].index ];
+			// 				var ratio = morph.elements[ j ].ratio;
 
-	// 							// TODO: implement
+			// 				if ( morph2.type === 1 ) {
 
-	// 						}
+			// 					updateAttributes( attribute, morph2, ratio );
 
-	// 					}
+			// 				} else {
 
-	// 				} else if ( morph.type === 1 ) { // vertex
+			// 					// TODO: implement
 
-	// 					updateAttributes( attribute, morph, 1.0 );
+			// 				}
 
-	// 				} else if ( morph.type === 2 ) { // bone
+			// 			}
 
-	// 					// TODO: implement
+			// 		} else if ( morph.type === 1 ) { // vertex
 
-	// 				} else if ( morph.type === 3 ) { // uv
+			// 			updateAttributes( attribute, morph, 1.0 );
 
-	// 					// TODO: implement
+			// 		} else if ( morph.type === 2 ) { // bone
 
-	// 				} else if ( morph.type === 4 ) { // additional uv1
+			// 			// TODO: implement
 
-	// 					// TODO: implement
+			// 		} else if ( morph.type === 3 ) { // uv
 
-	// 				} else if ( morph.type === 5 ) { // additional uv2
+			// 			// TODO: implement
 
-	// 					// TODO: implement
+			// 		} else if ( morph.type === 4 ) { // additional uv1
 
-	// 				} else if ( morph.type === 6 ) { // additional uv3
+			// 			// TODO: implement
 
-	// 					// TODO: implement
+			// 		} else if ( morph.type === 5 ) { // additional uv2
 
-	// 				} else if ( morph.type === 7 ) { // additional uv4
+			// 			// TODO: implement
 
-	// 					// TODO: implement
+			// 		} else if ( morph.type === 6 ) { // additional uv3
 
-	// 				} else if ( morph.type === 8 ) { // material
+			// 			// TODO: implement
 
-	// 					// TODO: implement
+			// 		} else if ( morph.type === 7 ) { // additional uv4
 
-	// 				}
+			// 			// TODO: implement
 
-	// 			}
+			// 		} else if ( morph.type === 8 ) { // material
 
-	// 			morphTargets.push( params );
-	// 			morphPositions.push( attribute );
+			// 			// TODO: implement
 
-	// 		}
+			// 		}
 
-	// 		// rigid bodies from rigidBodies field.
+			// 	}
 
-	// 		for ( var i = 0; i < data.metadata.rigidBodyCount; i ++ ) {
+			// 	morphTargets.push( params );
+			// 	morphPositions.push( attribute );
 
-	// 			var rigidBody = data.rigidBodies[ i ];
-	// 			var params = {};
+			// }
 
-	// 			for ( var key in rigidBody ) {
+			// // rigid bodies from rigidBodies field.
 
-	// 				params[ key ] = rigidBody[ key ];
+			// for ( var i = 0; i < data.metadata.rigidBodyCount; i ++ ) {
 
-	// 			}
+			// 	var rigidBody = data.rigidBodies[ i ];
+			// 	var params = {};
 
-	// 			/*
-	// 			 * RigidBody position parameter in PMX seems global position
-	// 			 * while the one in PMD seems offset from corresponding bone.
-	// 			 * So unify being offset.
-	// 			 */
-	// 			if ( data.metadata.format === 'pmx' ) {
+			// 	for ( var key in rigidBody ) {
 
-	// 				if ( params.boneIndex !== - 1 ) {
+			// 		params[ key ] = rigidBody[ key ];
 
-	// 					var bone = data.bones[ params.boneIndex ];
-	// 					params.position[ 0 ] -= bone.position[ 0 ];
-	// 					params.position[ 1 ] -= bone.position[ 1 ];
-	// 					params.position[ 2 ] -= bone.position[ 2 ];
+			// 	}
 
-	// 				}
+			// 	/*
+			// 	 * RigidBody position parameter in PMX seems global position
+			// 	 * while the one in PMD seems offset from corresponding bone.
+			// 	 * So unify being offset.
+			// 	 */
+			// 	if ( data.metadata.format === 'pmx' ) {
 
-	// 			}
+			// 		if ( params.boneIndex !== - 1 ) {
 
-	// 			rigidBodies.push( params );
+			// 			var bone = data.bones[ params.boneIndex ];
+			// 			params.position[ 0 ] -= bone.position[ 0 ];
+			// 			params.position[ 1 ] -= bone.position[ 1 ];
+			// 			params.position[ 2 ] -= bone.position[ 2 ];
 
-	// 		}
+			// 		}
 
-	// 		// constraints from constraints field.
+			// 	}
 
-	// 		for ( var i = 0; i < data.metadata.constraintCount; i ++ ) {
+			// 	rigidBodies.push( params );
 
-	// 			var constraint = data.constraints[ i ];
-	// 			var params = {};
+			// }
 
-	// 			for ( var key in constraint ) {
+			// constraints from constraints field.
 
-	// 				params[ key ] = constraint[ key ];
+			// for ( var i = 0; i < data.metadata.constraintCount; i ++ ) {
 
-	// 			}
+			// 	var constraint = data.constraints[ i ];
+			// 	let params = {};
 
-	// 			var bodyA = rigidBodies[ params.rigidBodyIndex1 ];
-	// 			var bodyB = rigidBodies[ params.rigidBodyIndex2 ];
+			// 	for ( var key in constraint ) {
 
-	// 			// Refer to http://www20.atpages.jp/katwat/wp/?p=4135
-	// 			if ( bodyA.type !== 0 && bodyB.type === 2 ) {
+			// 		params[ key ] = constraint[ key ];
 
-	// 				if ( bodyA.boneIndex !== - 1 && bodyB.boneIndex !== - 1 &&
-	// 				     data.bones[ bodyB.boneIndex ].parentIndex === bodyA.boneIndex ) {
+			// 	}
 
-	// 					bodyB.type = 1;
+			// 	var bodyA = rigidBodies[ params.rigidBodyIndex1 ];
+			// 	var bodyB = rigidBodies[ params.rigidBodyIndex2 ];
 
-	// 				}
+			// 	// Refer to http://www20.atpages.jp/katwat/wp/?p=4135
+			// 	if ( bodyA.type !== 0 && bodyB.type === 2 ) {
 
-	// 			}
+			// 		if ( bodyA.boneIndex !== - 1 && bodyB.boneIndex !== - 1 &&
+			// 		     data.bones[ bodyB.boneIndex ].parentIndex === bodyA.boneIndex ) {
 
-	// 			constraints.push( params );
+			// 			bodyB.type = 1;
 
-	// 		}
+			// 		}
 
-	// 		// build BufferGeometry.
+			// 	}
 
-	// 		var geometry = new BufferGeometry();
+			// 	constraints.push( params );
 
-	// 		geometry.setAttribute( 'position', new Float32BufferAttribute( positions, 3 ) );
-	// 		geometry.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
-	// 		geometry.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
-	// 		geometry.setAttribute( 'skinIndex', new Uint16BufferAttribute( skinIndices, 4 ) );
-	// 		geometry.setAttribute( 'skinWeight', new Float32BufferAttribute( skinWeights, 4 ) );
-	// 		geometry.setIndex( indices );
+			// }
 
-	// 		for ( var i = 0, il = groups.length; i < il; i ++ ) {
+			// build BufferGeometry.
 
-	// 			geometry.addGroup( groups[ i ].offset, groups[ i ].count, i );
+			// var geometry = new BufferGeometry();
 
-	// 		}
+			// geometry.setAttribute( 'position', new Float32BufferAttribute( positions, 3 ) );
+			// geometry.setAttribute( 'normal', new Float32BufferAttribute( normals, 3 ) );
+			// geometry.setAttribute( 'uv', new Float32BufferAttribute( uvs, 2 ) );
+			// geometry.setAttribute( 'skinIndex', new Uint16BufferAttribute( skinIndices, 4 ) );
+			// geometry.setAttribute( 'skinWeight', new Float32BufferAttribute( skinWeights, 4 ) );
+			// geometry.setIndex( indices );
 
-	// 		geometry.bones = bones;
+			// for ( var i = 0, il = groups.length; i < il; i ++ ) {
 
-	// 		geometry.morphTargets = morphTargets;
-	// 		geometry.morphAttributes.position = morphPositions;
-	// 		geometry.morphTargetsRelative = false;
+			// 	geometry.addGroup( groups[ i ].offset, groups[ i ].count, i );
 
-	// 		geometry.userData.MMD = {
-	// 			bones: bones,
-	// 			iks: iks,
-	// 			grants: grants,
-	// 			rigidBodies: rigidBodies,
-	// 			constraints: constraints,
-	// 			format: data.metadata.format
-	// 		};
+			// }
 
-	// 		geometry.computeBoundingSphere();
+			// geometry.bones = bones;
 
-	// 		return geometry;
+			// geometry.morphTargets = morphTargets;
+			// geometry.morphAttributes.position = morphPositions;
+			// geometry.morphTargetsRelative = false;
 
-	// 	}
+			// geometry.userData.MMD = {
+			// 	bones: bones,
+			// 	iks: iks,
+			// 	grants: grants,
+			// 	rigidBodies: rigidBodies,
+			// 	constraints: constraints,
+			// 	format: data.metadata.format
+			// };
 
-	};
+			// geometry.computeBoundingSphere();
+
+			// return geometry;
+
+}
